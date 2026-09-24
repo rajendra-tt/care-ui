@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="161" height="204" viewBox="-12 -12 161 204" role="img" aria-label="Charukesi loading">
+  <title>Charukesi loading animation</title>
+  <style>
+@keyframes ck-rise{0%{transform:translateY(40px) scaleY(.2);opacity:0}18%{transform:none;opacity:1}88%{transform:none;opacity:1}100%{transform:translateY(-6px);opacity:0}}
+@keyframes ck-drop{0%,6%{transform:translateY(-40px) scaleY(.2);opacity:0}24%{transform:none;opacity:1}88%{transform:none;opacity:1}100%{transform:translateY(6px);opacity:0}}
+@keyframes ck-pop{0%,24%{transform:scale(0);opacity:0}34%{transform:scale(1.25);opacity:1}40%,88%{transform:scale(1);opacity:1}100%{transform:scale(.6);opacity:0}}
+@keyframes ck-grow-y{0%,36%{transform:scaleY(0)}50%,88%{transform:scaleY(1)}100%{transform:scaleY(0)}}
+@keyframes ck-grow-x{0%,46%{transform:scaleX(0)}60%,88%{transform:scaleX(1)}100%{transform:scaleX(0)}}
+@keyframes ck-pulse{0%,62%{transform:scale(1)}70%{transform:scale(1.06)}78%,100%{transform:scale(1)}}
+@keyframes ck-word{0%,40%{opacity:.25;letter-spacing:.2em}60%,88%{opacity:1;letter-spacing:.06em}100%{opacity:.25}}
+@keyframes ck-dot{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-7px);opacity:1}}
+
+    .ck-p{transform-box:fill-box;animation-duration:2.6s;animation-iteration-count:infinite;animation-timing-function:cubic-bezier(.45,0,.2,1)}
+    .ck-orange{transform-origin:50% 100%;animation-name:ck-rise}
+    .ck-green{transform-origin:50% 0%;animation-name:ck-drop}
+    .ck-key{transform-origin:50% 50%;animation-name:ck-pop}
+    .ck-key2{animation-delay:.08s}
+    .ck-v{transform-origin:50% 50%;animation-name:ck-grow-y}
+    .ck-h{transform-origin:50% 50%;animation-name:ck-grow-x}
+    .ck-all{transform-origin:68.5px 90px;animation:ck-pulse 2.6s cubic-bezier(.45,0,.2,1) infinite}
+    .ck-word{font-family:Georgia,'Times New Roman',serif;font-weight:700;letter-spacing:.06em;animation:ck-word 2.6s ease-in-out infinite}
+    .ck-dot{transform-box:fill-box;transform-origin:50% 50%;animation:ck-dot 1.3s ease-in-out infinite}
+    .ck-d2{animation-delay:.15s}.ck-d3{animation-delay:.3s}
+    @media (prefers-reduced-motion:reduce){.ck-p,.ck-all,.ck-word,.ck-dot{animation:none}}
+  </style>
+  <g class="ck-all">
+      <rect class="ck-p ck-orange" x="0" y="30" width="72" height="150" fill="#C14F11"/>
+      <rect class="ck-p ck-green" x="72" y="0" width="65" height="153" fill="#3C7E24"/>
+      <rect class="ck-p ck-key" x="59" y="29" width="26" height="25" fill="#254128"/>
+      <rect class="ck-p ck-key ck-key2" x="59" y="129" width="26" height="24" fill="#254128"/>
+      <rect class="ck-p ck-v" x="59" y="54" width="25" height="75" fill="#FFFFFF"/>
+      <rect class="ck-p ck-h" x="34" y="79" width="75" height="25" fill="#FFFFFF"/>
+    </g>
+  
+  
+</svg>

@@ -1,0 +1,6 @@
+node_modules
+dist
+recordings/_capture
+# Walkthrough videos (about 29 MB each) are kept out of the repository by default.
+# Remove this line to publish them with the code.
+recordings/*.mp4

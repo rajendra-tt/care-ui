@@ -1,0 +1,17 @@
+{
+  "name": "CARE 2.0",
+  "short_name": "CARE 2.0",
+  "description": "Charukesi CARE 2.0 therapist UI",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#FFFFFF",
+  "theme_color": "#254229",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

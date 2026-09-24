@@ -1,0 +1,27 @@
+{
+  "name": "care-ui",
+  "version": "3.0.0",
+  "private": true,
+  "type": "module",
+  "description": "CARE 2.0 therapist UI (React Native Web) served from an NI cRIO-9056",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "record": "node tools/record-walkthrough.mjs && python tools/encode-video.py recordings/_capture recordings/CARE2.0-UI-Walkthrough.mp4",
+    "export-loader": "node tools/export-loader.mjs",
+    "test:keyboard": "node tools/check-keyboard.mjs",
+    "test:fullscreen": "node tools/check-fullscreen.mjs"
+  },
+  "dependencies": {
+    "@fontsource/open-sans": "^5.3.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-native-web": "^0.21.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.0",
+    "playwright-core": "^1.63.0",
+    "vite": "^7.1.0"
+  }
+}

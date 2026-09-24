@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- interactive-widget=resizes-visual: the on-screen keyboard overlays the page instead of
+         shrinking it (Chrome for Android 108+). Layout.jsx handles browsers that ignore it. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, interactive-widget=resizes-visual" />
+    <meta name="theme-color" content="#254229" />
+    <title>CARE 2.0</title>
+    <link rel="icon" type="image/png" href="./favicon.png" />
+    <!-- Installed to the home screen, the app opens full screen (no browser bar) -->
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icon-192.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- Runtime settings (cRIO address, mock mode, limits). Edit on the target without rebuilding. -->
+    <script src="./config.js"></script>
+    <style>
+      html, body, #root { margin: 0; height: 100%; background: #1b2e1d; overflow: hidden; }
+      body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+      input, textarea { -webkit-user-select: text; user-select: text; }
+      *:focus { outline: none; }
+      ::-webkit-scrollbar { width: 6px; height: 6px; }
+      ::-webkit-scrollbar-thumb { background: #A7C99D; border-radius: 3px; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
