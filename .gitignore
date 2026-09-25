@@ -1,6 +1,12 @@
 node_modules
 dist
+dist-demo
 recordings/_capture
 # Walkthrough videos (about 29 MB each) are kept out of the repository by default.
 # Remove this line to publish them with the code.
 recordings/*.mp4
+
+# Python API server
+server/*.db
+server/*.db-journal
+__pycache__/

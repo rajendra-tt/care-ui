@@ -28,5 +28,28 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <!-- If the app has not started after 8 s (script failed to load, or the unbuilt source is being
+         served, e.g. GitHub Pages set to "Deploy from a branch"), explain instead of a blank page. -->
+    <script>
+      setTimeout(function () {
+        var root = document.getElementById('root');
+        if (root && root.children.length) return;
+        var boot = document.getElementById('ck-boot');
+        if (boot) boot.parentNode.removeChild(boot);
+        var built = !!document.querySelector('script[src*="assets/"]');
+        var box = document.createElement('div');
+        box.setAttribute('role', 'alert');
+        box.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;font:16px/1.5 system-ui,sans-serif;color:#254229';
+        box.innerHTML =
+          '<div style="background:#fff;border-radius:18px;max-width:560px;padding:28px 32px;box-shadow:0 10px 30px rgba(0,0,0,.25)">' +
+          '<h2 style="margin:0 0 8px;font-size:22px">CARE 2.0 did not start</h2>' +
+          (built
+            ? '<p style="margin:0">The app files could not be loaded. Check the connection to the device, then reload the page.</p>'
+            : '<p style="margin:0 0 10px">This is the unbuilt source page, so the app cannot run from here.</p>' +
+              '<p style="margin:0"><b>On GitHub Pages:</b> open the repository <b>Settings &rarr; Pages</b>, set <b>Source</b> to <b>GitHub Actions</b>, then re-run <b>Deploy to GitHub Pages</b> on the Actions tab.<br><b>On this PC:</b> use <code>npm run dev</code>, or <code>npm run build</code> then <code>npm run preview</code>.</p>') +
+          '<button onclick="location.reload()" style="margin-top:18px;background:#639850;color:#fff;border:0;border-radius:999px;padding:10px 26px;font-size:16px;cursor:pointer">Reload</button></div>';
+        document.body.appendChild(box);
+      }, 8000);
+    </script>
   </body>
 </html>

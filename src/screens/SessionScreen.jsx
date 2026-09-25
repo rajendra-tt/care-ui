@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Screen } from '../components/Layout';
 import Icon from '../components/Icon';
 import { LiftControl, MovementControl, OffloadingPanel } from '../components/Controls';
-import { BackButton, Card, ConfirmModal, IconCircle, NextButton, PillButton, StatTile, T } from '../components/ui';
+import { BackButton, Card, ConfirmModal, IconCircle, NextButton, PillButton, StatTile, T, opticalCenter } from '../components/ui';
 import { useApp } from '../state/AppState';
 import { bodyWeightKg, describe, fmt, offloadKg, offloadPct } from '../services/offloading';
 import { colors, font } from '../theme/tokens';
@@ -71,9 +71,10 @@ export default function SessionScreen({ preset }) {
 
   const finish = () =>
     run(async () => {
-      await sendCommand({ cmd: 'session', action: 'stop' });
+      // The reply carries the controller's totals for the whole session (exercises, unloading, ...).
+      const res = await sendCommand({ cmd: 'session', action: 'stop' });
       replace('SessionReport', {
-        stats: { ...tm, mode: mode || tm.mode, speed, bodyWeightKg: weight, offloadKg: liveKg },
+        stats: { ...tm, mode: mode || tm.mode, speed, bodyWeightKg: weight, offloadKg: liveKg, ...(res?.summary || {}) },
         startedAt: startedAt.current,
         endedAt: new Date().toISOString(),
         vitalsBefore,
@@ -145,8 +146,8 @@ export default function SessionScreen({ preset }) {
             <Card style={styles.modeCard}>
               {Object.entries(MODES).map(([k, m]) => (
                 <Pressable key={k} onPress={() => chooseMode(k)} disabled={controlsLocked} style={({ pressed }) => [styles.modeBtn, mode === k && styles.modeOn, pressed && { transform: [{ scale: 0.98 }] }]}>
-                  <Icon name={m.icon} size={32} color={colors.primaryDark} />
-                  <T style={styles.modeText}>{m.label}</T>
+                  <View style={styles.modeIcon}><Icon name={m.icon} size={32} color={colors.primaryDark} /></View>
+                  <T style={[styles.modeText, opticalCenter(font.secondary + 2)]}>{m.label}</T>
                 </Pressable>
               ))}
               {mode === 'walk' ? (
@@ -206,7 +207,7 @@ export default function SessionScreen({ preset }) {
         style={({ pressed }) => [styles.estop, pressed && { transform: [{ scale: 0.97 }] }]}
       >
         <View style={styles.estopSquare} />
-        <T style={styles.estopText}>{state === 'estop' ? 'E-stop engaged' : 'Emergency stop'}</T>
+        <T style={[styles.estopText, opticalCenter(font.primary)]}>{state === 'estop' ? 'E-stop engaged' : 'Emergency stop'}</T>
       </Pressable>
 
       {/* ---- pop-ups ---- */}
@@ -312,13 +313,14 @@ const styles = StyleSheet.create({
   badge: { backgroundColor: colors.resumeOrange, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
   badgeText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   estop: { position: 'absolute', right: 36, top: 20, zIndex: 60, width: 380, height: 92, borderRadius: 999, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, cursor: 'pointer', backgroundImage: 'linear-gradient(180deg, #FF5A1F 0%, #FF0000 45%, #F00000 100%)', boxShadow: '0 6px 16px rgba(255,0,0,0.35)' },
-  estopSquare: { width: 22, height: 22, backgroundColor: '#fff', borderRadius: 3 },
+  estopSquare: { position: 'absolute', left: 58, width: 22, height: 22, backgroundColor: '#fff', borderRadius: 3 },
   estopText: { color: '#fff', fontSize: font.primary, fontWeight: '600' },
   mid: { flexDirection: 'row', paddingHorizontal: 36, gap: 22, height: 450, marginTop: 14 },
   leftCard: { width: 370, paddingTop: 14, paddingBottom: 10, alignItems: 'center' },
   hr: { alignSelf: 'stretch', height: 1, backgroundColor: colors.line, marginVertical: 8, marginHorizontal: 24 },
   modeCard: { width: 400, paddingTop: 26, paddingHorizontal: 22, alignItems: 'center', gap: 18 },
-  modeBtn: { width: 340, height: 64, borderRadius: 999, backgroundColor: '#fff', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, cursor: 'pointer', boxShadow: '0 3px 9px rgba(37,66,41,0.16)' },
+  modeBtn: { width: 340, height: 64, borderRadius: 999, backgroundColor: '#fff', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 3px 9px rgba(37,66,41,0.16)' },
+  modeIcon: { position: 'absolute', left: 30, top: 0, bottom: 0, justifyContent: 'center' },
   modeOn: { backgroundColor: colors.selectedMode, boxShadow: '0 0 0 3px #fff, 0 3px 12px rgba(37,66,41,0.22)' },
   modeText: { fontSize: font.secondary + 2, fontWeight: '700' },
   modeHint: { color: colors.grey, fontSize: font.small, marginTop: 30, textAlign: 'center' },

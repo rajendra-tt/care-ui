@@ -7,7 +7,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:demo": "node tools/build-demo.mjs",
     "preview": "vite preview",
+    "demo": "node tools/build-demo.mjs && vite preview --outDir dist-demo --port 4175",
     "record": "node tools/record-walkthrough.mjs && python tools/encode-video.py recordings/_capture recordings/CARE2.0-UI-Walkthrough.mp4",
     "export-loader": "node tools/export-loader.mjs",
     "test:keyboard": "node tools/check-keyboard.mjs",

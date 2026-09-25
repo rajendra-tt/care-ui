@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Screen } from '../components/Layout';
 import Icon from '../components/Icon';
-import { BackButton, Card, ConfirmModal, T } from '../components/ui';
+import { BackButton, Card, T } from '../components/ui';
+import { ReportModal } from '../components/SessionSummary';
 import { useApp } from '../state/AppState';
-import { describe } from '../services/offloading';
 import { api } from '../services/api';
 import { MODES, fmtDuration } from './SessionScreen';
 import { colors, font } from '../theme/tokens';
@@ -47,7 +47,7 @@ export default function PatientDetails({ patient }) {
               <T style={[styles.td, { flex: 1 }]}>{s.id}</T>
               <T style={[styles.td, { flex: 1 }]}>{s.therapistId}</T>
               <T style={[styles.td, { flex: 1 }]}>{fmtDuration(s.durationSec)}</T>
-              <T style={[styles.td, { flex: 1.3 }]}>{MODES[s.mode]?.title || '—'}</T>
+              <T style={[styles.td, { flex: 1.3 }]}>{(s.exercises?.length ? s.exercises.map((e) => MODES[e.mode]?.label || e.mode).join(', ') : MODES[s.mode]?.title) || '—'}</T>
               <View style={[styles.tdBox, { flex: 1 }]}>
                 <Pressable onPress={() => setOpen(s)} style={styles.getReport}>
                   <Icon name="report" size={16} color={colors.primary} />
@@ -60,24 +60,7 @@ export default function PatientDetails({ patient }) {
         </ScrollView>
       </Card>
       <BackButton onPress={goBack} style={{ position: 'absolute', left: 60, bottom: 28 }} />
-      <ConfirmModal
-        visible={!!open}
-        icon="report"
-        title={`Session ${open?.id || ''}`}
-        subtitle={open ? `${open.date} · ${MODES[open.mode]?.title || ''}` : ''}
-        rows={open ? [
-          ['Duration', fmtDuration(open.durationSec)],
-          ['Breaks / Steps / Squats', `${open.breaks ?? 0} / ${open.steps ?? 0} / ${open.squats ?? 0}`],
-          ['Offloading', open.offloading != null ? describe(open.offloading, open.offloadUnit, open.bodyWeightKg) : '—'],
-          ['Vitals after (BP / SpO2 / HR)', open.vitalsAfter ? `${open.vitalsAfter.bp || '—'} / ${open.vitalsAfter.spo2 || '—'} / ${open.vitalsAfter.hr || '—'}` : '—'],
-          ['Comments', open.comments || '—'],
-        ] : []}
-        cancelLabel="Close"
-        confirmLabel="Print"
-        confirmIcon="report"
-        onCancel={() => setOpen(null)}
-        onConfirm={() => window.print()}
-      />
+      <ReportModal session={open} patient={patient} onClose={() => setOpen(null)} />
     </Screen>
   );
 }

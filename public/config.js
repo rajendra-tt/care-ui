@@ -3,16 +3,26 @@
  * This file is NOT bundled: after deploying to the cRIO you can edit it in place.
  */
 window.CARE_CONFIG = {
-  // 'mock'  -> in-browser simulator, no hardware needed (for design review / demos)
-  // 'crio'  -> talk to the LabVIEW Web Service running on the cRIO-9056
-  mode: 'mock',
+  // 'crio' -> call the API server (python server/app.py, or the cRIO). Default.
+  // 'mock' -> built-in simulator, no server needed (used for the GitHub Pages demo).
+  mode: 'crio',
 
-  // Base URL of the LabVIEW Web Service. Empty string = same host that served this page.
-  // Example when the UI is opened from another machine: 'http://192.168.1.50:8001'
+  // Kiosk mode (tablet use): full screen is enforced ("Tap to continue" until it is, no "Exit full
+  // screen"), and right-click, F12 / developer-tool keys, view source, reload, zoom and leaving via
+  // the Back button are blocked. Set to false while developing.
+  kiosk: true,
+
+  // In-app keyboard: tablet browsers leave full screen when their own keyboard opens, so text
+  // fields use this built-in keyboard instead (the tablet keyboard never opens). A hardware
+  // keyboard still works. Set to false to use the tablet's own keyboard.
+  onScreenKeyboard: true,
+
+  // Where the API server is. Empty = same address as this page (`npm run dev` and `npm run preview`
+  // forward /api to the Python server on port 8000). Otherwise e.g. 'http://192.168.1.50:8000'.
   apiBase: '',
-  apiPrefix: '/care/api',
+  apiPrefix: '/api',
 
-  // How often to poll /status for live telemetry (ms).
+  // How often to poll GET /api/device/status for live telemetry (ms).
   statusPollMs: 250,
   // While a jog button (lift / device movement) is held, the command is re-sent at
   // this interval. The RT side should stop motion if it does not hear from the UI

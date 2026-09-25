@@ -14,13 +14,17 @@ const bootSplash = () => ({
 
 // The UI is written with React Native primitives and rendered in the browser
 // through react-native-web, then built to static files that the cRIO serves.
+// Address of the API server (python server/app.py). Override with the CARE_API environment variable.
+const API = process.env.CARE_API || 'http://127.0.0.1:8000';
+
 export default defineConfig({
   base: './', // relative paths so the bundle works from any folder on the cRIO web server
   plugins: [react(), bootSplash()],
   // Listen on every network interface (0.0.0.0) so a tablet on the same network can open
   // http://<this-PC's-IP>:5173 (dev) or :4173 (built app). Vite prints the Network URLs on start.
-  server: { host: '0.0.0.0', port: 5173, strictPort: true },
-  preview: { host: '0.0.0.0', port: 4173, strictPort: true },
+  // /api is forwarded to the Python API server (python server/app.py, port 8000).
+  server: { host: '0.0.0.0', port: 5173, strictPort: true, proxy: { '/api': API } },
+  preview: { host: '0.0.0.0', port: 4173, strictPort: true, proxy: { '/api': API } },
   resolve: {
     alias: { 'react-native': 'react-native-web' },
     extensions: ['.web.jsx', '.web.js', '.jsx', '.js'],

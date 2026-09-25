@@ -24,6 +24,10 @@ const PILL = {
 
 export function PillButton({ label, variant = 'white', icon, iconRight, onPress, width, height = 53, fontSize = font.secondary, disabled, style, textStyle }) {
   const v = PILL[variant];
+  // The label is centred on the whole button; icons are pinned to the edges. The same space is
+  // kept free on both sides so the label never shifts, and the button widens if a label needs it.
+  const iconSize = fontSize + 4;
+  const side = icon || iconRight ? ICON_EDGE + iconSize + 8 : 22;
   return (
     <Pressable
       accessibilityRole="button"
@@ -32,8 +36,9 @@ export function PillButton({ label, variant = 'white', icon, iconRight, onPress,
       style={({ pressed, hovered }) => [
         styles.pill,
         {
-          width,
+          minWidth: width,
           height,
+          paddingHorizontal: side,
           backgroundColor: v.bg,
           borderRadius: v.square ? radius.button : radius.pill,
           borderWidth: v.border ? 1.5 : 0,
@@ -46,12 +51,17 @@ export function PillButton({ label, variant = 'white', icon, iconRight, onPress,
         style,
       ]}
     >
-      {icon ? <Icon name={icon} size={fontSize + 4} color={v.fg} strokeWidth={2} /> : null}
-      <T style={[{ color: v.fg, fontSize, fontWeight: '600' }, textStyle]}>{label}</T>
-      {iconRight ? <Icon name={iconRight} size={fontSize + 2} color={v.fg} strokeWidth={2} /> : null}
+      {icon ? <View style={[styles.pillIcon, { left: ICON_EDGE }]}><Icon name={icon} size={iconSize} color={v.fg} strokeWidth={2} /></View> : null}
+      <T numberOfLines={1} style={[styles.pillText, opticalCenter(fontSize), { color: v.fg, fontSize }, textStyle]}>{label}</T>
+      {iconRight ? <View style={[styles.pillIcon, { right: ICON_EDGE }]}><Icon name={iconRight} size={iconSize - 2} color={v.fg} strokeWidth={2} /></View> : null}
     </Pressable>
   );
 }
+
+const ICON_EDGE = 18;
+
+// Open Sans sits about 3 % of its size low in its line box; lift it so capitals are optically centred.
+export const opticalCenter = (fontSize) => ({ position: 'relative', top: -Math.round(fontSize * 0.03) });
 
 export const BackButton = ({ onPress, label = 'Back', ...p }) => (
   <PillButton label={label} icon="chevronLeft" variant="white" width={178} height={53} onPress={onPress} {...p} />
@@ -167,11 +177,12 @@ export function UnderlineInput({ icon, style, right, ...p }) {
   );
 }
 
-export function BoxInput({ style, inputStyle, multiline, ...p }) {
+export function BoxInput({ style, inputStyle, multiline, inputRef, ...p }) {
   const [focus, setFocus] = useState(false);
   return (
     <View style={[styles.box, focus && { borderColor: colors.primary }, style]}>
       <TextInput
+        ref={inputRef}
         placeholderTextColor="#A5ADA7"
         multiline={multiline}
         onFocus={() => setFocus(true)}
@@ -181,6 +192,55 @@ export function BoxInput({ style, inputStyle, multiline, ...p }) {
       />
     </View>
   );
+}
+
+// Blood pressure: two number fields with a fixed "/" between them (systolic / diastolic).
+// The value is one string, "120/80". Both fields use the number pad; after 3 digits (or "/")
+// the cursor moves to the diastolic field by itself.
+export function BpInput({ value, onChange, boxWidth = 120, height = 54, invalid, style, showUnit = true }) {
+  const [sys = '', dia = ''] = String(value || '').split('/');
+  const diaRef = useRef(null);
+  const emit = (s, d) => onChange(s || d ? `${s}/${d}` : '');
+  const border = invalid ? { borderColor: '#E57373' } : null;
+  const input = { textAlign: 'center', paddingHorizontal: 6, fontSize: font.secondary, fontWeight: '600' };
+  return (
+    <View style={[{ flexDirection: 'row', alignItems: 'center', gap: boxWidth < 80 ? 5 : 10 }, style]}>
+      <BoxInput
+        style={[{ width: boxWidth, height }, border]}
+        inputStyle={input}
+        placeholder="120"
+        inputMode="numeric"
+        accessibilityLabel="Systolic"
+        value={sys}
+        onChangeText={(t) => {
+          const digits = t.replace(/\D/g, '').slice(0, 3);
+          emit(digits, dia);
+          if (t.includes('/') || digits.length === 3) diaRef.current?.focus();
+        }}
+      />
+      <T style={{ fontSize: boxWidth < 80 ? 22 : 30, fontWeight: '600', color: colors.primaryDark }}>/</T>
+      <BoxInput
+        inputRef={diaRef}
+        style={[{ width: boxWidth, height }, border]}
+        inputStyle={input}
+        placeholder="80"
+        inputMode="numeric"
+        accessibilityLabel="Diastolic"
+        value={dia}
+        onChangeText={(t) => emit(sys, t.replace(/\D/g, '').slice(0, 3))}
+      />
+      {showUnit ? <T style={{ fontSize: font.tiny, color: colors.grey }}>mmHg</T> : null}
+    </View>
+  );
+}
+
+// "120/80" -> error text, or undefined when valid (systolic 50-260, diastolic 30-160, sys > dia).
+export function bpError(value) {
+  const m = /^(\d{2,3})\/(\d{2,3})$/.exec(String(value || ''));
+  if (!m) return value ? 'Enter both values' : 'Required';
+  const [s, d] = [Number(m[1]), Number(m[2])];
+  if (s < 50 || s > 260 || d < 30 || d > 160 || s <= d) return 'Check values';
+  return undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -230,7 +290,9 @@ export function StatTile({ icon, label, value, width = 178, height = 160, big })
 
 const styles = StyleSheet.create({
   text: { fontFamily: font.family, color: colors.text },
-  pill: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 22, cursor: 'pointer' },
+  pill: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
+  pillIcon: { position: 'absolute', top: 0, bottom: 0, justifyContent: 'center' },
+  pillText: { fontWeight: '600', textAlign: 'center' },
   card: { backgroundColor: colors.white, borderRadius: radius.card, ...shadow.card },
   round: { backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
   arrowLabel: { fontSize: font.small, color: colors.textMuted, marginTop: 4 },

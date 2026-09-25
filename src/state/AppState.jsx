@@ -3,6 +3,7 @@ import { api } from '../services/api';
 import { config } from '../services/config';
 
 const AppContext = createContext(null);
+const SESSION_SCREENS = ['DeviceControl', 'Session'];
 export const useApp = () => useContext(AppContext);
 
 const EMPTY_TELEMETRY = {
@@ -37,12 +38,16 @@ export function AppProvider({ children }) {
 
   // --- live telemetry from the cRIO ---
   const [telemetry, setTelemetry] = useState(EMPTY_TELEMETRY);
-  const [connected, setConnected] = useState(false);
+  const [connected, setConnected] = useState(true);
   const [everConnected, setEverConnected] = useState(false);
   const failures = useRef(0);
 
+  // GET /device/status is polled only during a session: on the Device Control and Session screens
+  // (both reached after Vitals opened the session). Elsewhere nothing is polled.
+  const polling = !!user && SESSION_SCREENS.includes(route.name);
+
   useEffect(() => {
-    if (!user) return undefined;
+    if (!polling) return undefined;
     let alive = true;
     let timer;
     const poll = async () => {
@@ -63,11 +68,14 @@ export function AppProvider({ children }) {
     };
     poll();
     return () => { alive = false; clearTimeout(timer); };
-  }, [user]);
+  }, [polling]);
 
   const sendCommand = useCallback(async (payload) => {
     try {
       const res = await api.command(payload);
+      setConnected(true);
+      // The server answers E-stop / break / resume / start with the new device state.
+      if (res && typeof res.state === 'string') setTelemetry((t) => (t.state === res.state ? t : { ...t, state: res.state }));
       // optimistic merge so the UI reacts before the next poll
       if (payload.cmd === 'offload') {
         setTelemetry((t) => ({
@@ -79,6 +87,7 @@ export function AppProvider({ children }) {
       if (payload.cmd === 'mode') setTelemetry((t) => ({ ...t, mode: payload.mode, speed: payload.speed || t.speed }));
       return res;
     } catch (e) {
+      if (e.code === 'NETWORK') setConnected(false);
       console.warn('[cRIO] command failed', payload, e);
       throw e;
     }
@@ -89,7 +98,7 @@ export function AppProvider({ children }) {
     setPatient(null);
     setVitalsBefore(null);
     setTelemetry(EMPTY_TELEMETRY);
-    setConnected(false);
+    setConnected(true);
     setEverConnected(false);
     reset('Login');
   }, [reset]);

@@ -1,6 +1,6 @@
 # Builds the UI and publishes it to GitHub Pages on every push to main.
-# The published site runs in simulator mode (public/config.js: mode 'mock'), so testers need
-# no cRIO. One-time setup: repository Settings -> Pages -> Source: "GitHub Actions".
+# The published site runs in simulator mode (the step below switches config.js to 'mock'), so
+# testers need no server. One-time setup: repository Settings -> Pages -> Source: "GitHub Actions".
 name: Deploy to GitHub Pages
 
 on:
@@ -29,11 +29,12 @@ jobs:
           cache: npm
 
       - run: npm ci
-      - run: npm run build
+      # No API server on GitHub Pages: publish the demo build (built-in simulator).
+      - run: npm run build:demo
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: dist-demo
 
   deploy:
     needs: build

@@ -7,6 +7,13 @@ const URL = process.argv[2] || 'http://localhost:4173/';
 const W = 1280, H = 800, KB = 360; // tablet landscape; keyboard takes ~360 px
 const b = await chromium.launch({ channel: 'chrome', headless: true });
 const ctx = await b.newContext({ viewport: { width: W, height: H }, hasTouch: true });
+// Scripted runs switch kiosk mode off in this browser only (config.js is patched in flight).
+await ctx.route('**/config.js', async (route) => {
+  const res = await route.fetch();
+  await route.fulfill({ response: res, body: `${await res.text()}
+window.CARE_CONFIG.kiosk = false; window.CARE_CONFIG.onScreenKeyboard = false;
+` });
+});
 const page = await ctx.newPage();
 await page.goto(URL);
 const pw = page.getByPlaceholder('Password');

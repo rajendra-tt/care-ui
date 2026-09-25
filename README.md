@@ -64,28 +64,39 @@ For browsers that shrink the window instead, `Stage` in `src/components/Layout.j
 previous scale and scrolls the focused field above the keyboard. Check it with
 `npm run test:keyboard` (needs `npm run preview` running).
 
-**Full screen:** on by default. Browsers only allow full screen after a tap, so the app enters
-it on the first tap and restores it on the next tap whenever the browser leaves it (many Android
-browsers do when the keyboard opens). The header button (four-corner icon) switches between
-**Full screen** and **Exit full screen**, and the choice is remembered on the tablet
-(`src/services/fullscreen.js`, check with `npm run test:fullscreen`). Installed to the home screen,
-the app opens full screen with no browser bar (`public/manifest.webmanifest`).
+**In-app keyboard** (`onScreenKeyboard: true` in `public/config.js`, the default): tablet browsers leave full screen when a text field takes input. Android does it when its keyboard opens; an iPad (every iPad browser, including Chrome, uses Safari's engine) does it as soon as a real text field gets focus. So every text field is read-only to the browser (`readonly` + `inputmode="none"`), and a keyboard built into the UI types into the focused field instead (`src/components/Keyboard.jsx`):
+* **Layouts:** letters, a 123 layer for numbers and symbols, and a number pad for numeric fields.
+* **Keys:** Enter submits single-line fields (e.g. Sign In); Done closes the keyboard.
+* **Placement:** the screen slides up so the focused field stays above the keyboard.
+* **Hardware keyboard:** still works.
 
-`public/config.js` ships with `mode: 'mock'`: a built-in simulator stands in for the cRIO so
-the whole flow can be demonstrated with no hardware. Logins: `preethi / 1234` (therapist),
-`admin / admin`.
+**Kiosk mode** (`kiosk: true` in `public/config.js`, the default):
+* **Full screen is enforced.** Until the app is full screen, a "Tap anywhere to continue" screen covers it; that tap enters full screen. There is no "Exit full screen" option.
+* **The keyboard is allowed.** While a text field is being typed in, the cover is not shown, because Android browsers leave full screen when the keyboard opens. The next tap restores full screen.
+* **The Emergency stop is never covered.** The cover never appears on the Session screen.
+* **Browser features are blocked:** right-click and long-press menus, F12 and Ctrl+Shift+I/J/C (developer tools), Ctrl+U (view source), reload, zoom, and leaving through the Back button.
+* **Development:** set `kiosk: false` while developing (`src/services/kiosk.js`, `src/services/fullscreen.js`). Check the behaviour with `npm run test:fullscreen`.
+
+**iPad:** the most reliable full screen is the home-screen app: in Safari or Chrome tap **Share → Add to Home Screen**, then open CARE 2.0 from its icon (no browser bar at all). To lock the iPad to it, use **Guided Access** (Settings → Accessibility → Guided Access, then triple-click the top button in the app).
+
+A web page cannot hide the address bar or stop a determined user from leaving full screen (Esc, swipe). For a fully locked tablet, install the app to the home screen (it opens with no browser bar, `public/manifest.webmanifest`) and use the tablet's kiosk / screen-pinning mode.
+
+`public/config.js` ships with `mode: 'crio'`: the UI calls the API server (see *API server* below).
+`mode: 'mock'` (or `?mode=mock` in the address) uses a built-in simulator instead, with no server.
+Logins: `preethi / 1234` (therapist), `admin / admin`.
 
 ## Recorded walkthrough
 
 `recordings/CARE2.0-UI-Walkthrough-v2.mp4` (current UI: patient card grid, End session only on the break
 screen) and `recordings/CARE2.0-UI-Walkthrough.mp4` (first version) are scripted runs (2.5 min, 1280×800,
 H.264) of every
-screen in simulator mode, with an on-screen cursor, tap ripples and captions. To re-record it
+screen with an on-screen cursor, tap ripples and captions. To re-record it
 after UI changes (needs Chrome and Python with `opencv-python`; no browser download):
 
 ```bash
+python server/app.py              # API server, keep running
 npm run build
-npx vite preview --port 4173      # keep running in a second terminal
+npx vite preview --port 4173      # keep running in another terminal
 npm run record
 ```
 
@@ -100,6 +111,39 @@ It also works as an end-to-end smoke test, because it fails if any screen or but
 create an empty `care-ui` repository on GitHub, set **Settings → Pages → Source: GitHub Actions**,
 then push this folder (`git init -b main`, `git add -A`, `git commit`, `git remote add origin …`,
 `git push -u origin main`). Full steps: section 12 of the command guide. A Pages site is public.
+If the site shows only a dark-green screen (or "CARE 2.0 did not start"), Pages is serving the raw
+source: set **Settings → Pages → Source** to **GitHub Actions** and re-run the workflow.
+
+## Demo version (no server)
+
+A stand-alone demo that runs on the built-in simulator: no API server, no cRIO, no network calls.
+
+```bash
+npm run demo          # build it and serve it on http://<pc-ip>:4175   (Ctrl+C to stop)
+npm run build:demo    # build only, into dist-demo/  (copy that folder to any web server)
+```
+
+* It is the same app with `mode: 'mock'` in `dist-demo/config.js`. A **SIMULATOR** badge shows in the header.
+* Logins: `preethi` / `1234`, `admin` / `admin`.
+* Patients and sessions created in the demo are kept in that browser only.
+* The GitHub Pages site publishes this demo build.
+
+**Close button (login screen):** the × at the top right asks for confirmation, then closes the tab. Browsers only let a page close tabs that a script opened, so in a normal tab or a home-screen app it opens a "CARE 2.0 is closed" page (`public/closed.html`) with a **Reopen** button instead.
+
+## API server (server/app.py)
+
+The UI gets all its data by calling the API server. Start the server first, then the UI:
+
+```bash
+python server/app.py     # terminal 1: API server on port 8000 (Ctrl+C to stop)
+npm run dev              # terminal 2: UI on http://<pc-ip>:5173 (forwards /api to port 8000)
+```
+
+* Log in with `preethi` / `1234` or `admin` / `admin`.
+* The server prints every request it receives, with its JSON body, and the HTTP status of the reply.
+* The UI polls `GET /api/device/status` only during a session (Device Control and Session screens).
+* Data is stored in `server/care.db` (CARE 2.0 schema, see docs/CRIO_API.md). Delete it to start again with the demo data.
+* APIs, requests, responses and status codes: [docs/CRIO_API.md](docs/CRIO_API.md).
 
 ## Build & deploy to the cRIO-9056
 
@@ -110,7 +154,7 @@ npm run build        # -> dist/
 1. Edit `dist/config.js`: set `mode: 'crio'` (and `apiBase` if the page is not served by the
    same Web Service that implements the API).
 2. Copy the contents of `dist/` to the target, e.g. into the **Public Content** folder of the
-   LabVIEW Web Service that implements `/care/api` (simplest: same origin, no CORS), using
+   LabVIEW Web Service that implements `/api` (see docs/CRIO_API.md; simplest: same origin, no CORS), using
    WinSCP/`scp` with SSH enabled in NI MAX.
 3. Open `http://<crio-ip>:<port>/<service>/<public-folder>/index.html` on the tablet. For a
    kiosk, launch the browser in full-screen/kiosk mode or use the ☰ → *Full screen* menu.
@@ -130,7 +174,8 @@ src/components/           ui.jsx (pill buttons, cards, modal, jog buttons), Cont
                           (lift / movement / offloading gauge), Layout.jsx (header, stage), Icon.jsx
 src/screens/              one file per screen
 src/theme/tokens.js       P007 colours, font sizes, radii
-docs/CRIO_API.md          HTTP contract + required RT-side safety behaviour
+docs/CRIO_API.md          HTTP contract (from the System Workflow sheet) + required RT-side safety behaviour
+server/app.py             API server (Python, standard library only)
 ```
 
 ## Open items to confirm with the design team

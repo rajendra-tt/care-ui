@@ -73,6 +73,13 @@ const OVERLAY = () => {
 const browser = await chromium.launch({ channel: 'chrome', headless: true, args: ['--hide-scrollbars'] });
 const context = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
 await context.addInitScript(OVERLAY);
+// Scripted runs switch kiosk mode off in this browser only (config.js is patched in flight).
+await context.route('**/config.js', async (route) => {
+  const res = await route.fetch();
+  await route.fulfill({ response: res, body: `${await res.text()}
+window.CARE_CONFIG.kiosk = false; window.CARE_CONFIG.onScreenKeyboard = false;
+` });
+});
 const page = await context.newPage();
 
 // ---- screencast capture ----
@@ -119,6 +126,7 @@ const hold = async (loc, ms, pause = 500) => {
 };
 const typeInto = async (loc, text, pause = 250) => {
   await tap(loc, 150);
+  await loc.fill(''); // replace any pre-filled value
   await page.keyboard.type(text, { delay: 55 });
   await sleep(pause);
 };
@@ -181,7 +189,9 @@ await cap('Patient home');
 await sleep(900);
 await tap(text('New Session'), 1000);
 await cap('Patient vitals before the session');
-await typeInto(ph('Enter BP (e.g. 120/80)'), '124/82');
+await typeInto(ph('Enter Weight (kg, max 136)'), '62');
+await typeInto(app.getByLabel('Systolic'), '124'); // 3 digits: the cursor moves to diastolic
+await typeInto(app.getByLabel('Diastolic'), '82');
 await typeInto(ph('Enter SpO2 (%)'), '98');
 await typeInto(ph('Enter heart rate (bpm)'), '76');
 await typeInto(ph('Enter notes'), 'Comfortable, no pain reported');
@@ -234,11 +244,11 @@ await tap(text('Release E-stop'), 2000);
 await cap('End the session · <small>from the break screen</small>');
 await tap(text('End session'), 1100);
 await tap(text('Confirm'), 1400);
-await cap('Session report · <small>post-session vitals and comments</small>');
-const enter = ph('Enter');
-await typeInto(enter.nth(0), '128/84');
-await typeInto(enter.nth(1), '97');
-await typeInto(enter.nth(2), '92');
+await cap('Session report · <small>vitals before / after and the session summary</small>');
+await typeInto(app.getByLabel('Systolic'), '128');
+await typeInto(app.getByLabel('Diastolic'), '84');
+await typeInto(ph('98'), '97');
+await typeInto(app.getByPlaceholder('80', { exact: true }).last(), '92');
 await typeInto(ph('Therapist comments…'), 'Good tolerance at medium speed. Increase offloading next session.');
 await tap(text('Save session'), 1000);
 await tap(text('Confirm'), 1600);

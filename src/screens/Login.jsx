@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { Screen } from '../components/Layout';
 import Icon from '../components/Icon';
-import { Card, PillButton, T, UnderlineInput } from '../components/ui';
+import { Card, ConfirmModal, PillButton, T, UnderlineInput } from '../components/ui';
+import { closeApp } from '../services/kiosk';
 import { LoadingOverlay } from '../components/LogoLoader';
 import { useApp } from '../state/AppState';
 import { api, isMock } from '../services/api';
@@ -16,6 +17,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [closing, setClosing] = useState(false);
 
   const submit = async () => {
     if (!username || !password) { setError('Enter username and password'); return; }
@@ -34,7 +36,7 @@ export default function Login() {
   };
 
   return (
-    <Screen showNav={false}>
+    <Screen showNav={false} onClose={() => setClosing(true)}>
       <View style={styles.row}>
         <View style={styles.brand}>
           <Image source={logo} style={{ width: 327, height: 285 }} resizeMode="contain" accessibilityLabel="Charukesi" />
@@ -79,6 +81,16 @@ export default function Login() {
         </Card>
       </View>
       <LoadingOverlay visible={busy} message="Signing in…" />
+      <ConfirmModal
+        visible={closing}
+        icon="close"
+        title="Close CARE 2.0?"
+        subtitle="The app closes on this tablet. Open it again from its link or home-screen icon."
+        confirmLabel="Close"
+        confirmIcon="close"
+        onCancel={() => setClosing(false)}
+        onConfirm={closeApp}
+      />
     </Screen>
   );
 }

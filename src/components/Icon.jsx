@@ -80,7 +80,8 @@ export function Triangle({ dir = 'up', size = 34, color }) {
   const rot = { up: 0, right: 90, down: 180, left: 270 }[dir];
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" style={{ display: 'block', transform: `rotate(${rot}deg)` }} aria-hidden="true">
-      <path d="M12 4.5L22 19H2z" fill={color} />
+      {/* centroid at (12, 12), so the arrow looks centred in its circle whichever way it points */}
+      <path d="M12 2.33L22 16.83H2z" fill={color} />
     </svg>
   );
 }

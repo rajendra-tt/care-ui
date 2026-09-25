@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Screen } from '../components/Layout';
 import Icon from '../components/Icon';
-import { BackButton, Card, ConfirmModal, IconCircle, NextButton, T } from '../components/ui';
+import { BackButton, BpInput, Card, ConfirmModal, IconCircle, NextButton, T } from '../components/ui';
 import { useApp } from '../state/AppState';
 import { api } from '../services/api';
 import { colors, font } from '../theme/tokens';
@@ -44,7 +44,7 @@ const TABS = [
     key: 'cardio', label: 'Cardiopulmonary',
     sections: [{ title: 'Cardiopulmonary', icon: 'heartPulse', fields: [
       [{ k: 'restingHr', label: 'Resting heart rate', ph: 'bpm', icon: 'heartPulse', numeric: true },
-        { k: 'restingBp', label: 'Resting blood pressure', ph: 'e.g. 120/80', icon: 'heartPulse' }],
+        { k: 'restingBp', label: 'Resting blood pressure', icon: 'heartPulse', bp: true }],
       [{ k: 'restingSpo2', label: 'Resting SpO2', ph: '%', icon: 'drop', numeric: true },
         { k: 'respRate', label: 'Respiratory rate', ph: 'breaths/min', icon: 'hourglass', numeric: true }],
       { k: 'cardiacConditions', label: 'Cardiac / pulmonary conditions', ph: 'Enter conditions', icon: 'clipboard' },
@@ -199,6 +199,8 @@ function Field({ f, value, onChange, error }) {
               </Pressable>
             ))}
           </View>
+        ) : f.bp ? (
+          <BpInput value={value} onChange={onChange} boxWidth={64} height={34} style={{ marginTop: 4 }} />
         ) : (
           <TextInput
             value={value ?? ''}

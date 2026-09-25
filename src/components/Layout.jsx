@@ -4,9 +4,10 @@ import Icon, { Battery } from './Icon';
 import { T } from './ui';
 import { useApp } from '../state/AppState';
 import { isMock } from '../services/api';
-import { toggleFullscreen, useAutoFullscreen, useFullscreenState } from '../services/fullscreen';
+import { enterFullscreen, toggleFullscreen, useAutoFullscreen, useFullscreenGate, useFullscreenState } from '../services/fullscreen';
 import { SCREEN, colors, font, shadow } from '../theme/tokens';
 import logoMark from '../assets/charukesi-mark.png';
+import { KB_HEIGHT, OnScreenKeyboard, keyboardEnabled, useFocusedField } from './Keyboard';
 
 const isEditable = (el) =>
   !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
@@ -20,7 +21,9 @@ function useStableViewport() {
   const { width, height } = useWindowDimensions();
   const stable = useRef({ width, height });
   const s = stable.current;
-  const editing = typeof document !== 'undefined' && isEditable(document.activeElement);
+  // With the in-app keyboard there is no tablet keyboard to ignore: always fit the real window
+  // (e.g. when the browser bar reappears the canvas must shrink, or the bottom is cut off).
+  const editing = !keyboardEnabled() && typeof document !== 'undefined' && isEditable(document.activeElement);
   if (width !== s.width || height >= s.height || !editing) stable.current = { width, height };
   return { width, height: stable.current.height };
 }
@@ -59,15 +62,58 @@ export function Stage({ children }) {
   useKeepFocusedFieldVisible();
   useAutoFullscreen();
   const scale = Math.min(width / SCREEN.width, height / SCREEN.height);
+  const field = useFocusedField();
+  const canvasRef = useRef(null);
+  const shift = useLiftAboveKeyboard(field, scale, canvasRef);
   return (
     // The outer layer only scrolls while the keyboard covers part of a shrunken window.
     <View style={styles.stageOuter}>
       <View style={[styles.stageFrame, { height }]}>
         <View style={{ width: SCREEN.width * scale, height: SCREEN.height * scale, overflow: 'hidden' }}>
-          <View style={[styles.canvas, { transform: [{ scale }], transformOrigin: 'top left' }]}>{children}</View>
+          <View ref={canvasRef} style={[styles.canvas, { transform: [{ scale }], transformOrigin: 'top left' }]}>
+            <View style={[styles.canvasContent, { transform: [{ translateY: -shift }] }]}>{children}</View>
+            <OnScreenKeyboard field={field} />
+          </View>
         </View>
       </View>
+      <FullscreenGate />
     </View>
+  );
+}
+
+// While the in-app keyboard is open, slide the screen up just enough that the focused field sits
+// above the keyboard (never so far that the top of the field goes off screen).
+function useLiftAboveKeyboard(field, scale, canvasRef) {
+  const [shift, setShift] = useState(0);
+  const current = useRef(0);
+  useEffect(() => {
+    let next = 0;
+    if (field && canvasRef.current) {
+      const canvasTop = canvasRef.current.getBoundingClientRect().top;
+      const r = field.getBoundingClientRect();
+      const top = (r.top - canvasTop) / scale + current.current; // position without the current lift
+      const bottom = (r.bottom - canvasTop) / scale + current.current;
+      next = Math.max(0, Math.min(bottom + 24 - (SCREEN.height - KB_HEIGHT), top - 12));
+    }
+    current.current = next;
+    setShift(next);
+  }, [field, scale, canvasRef]);
+  return shift;
+}
+
+// Kiosk mode: the app is only usable full screen. Until it is, this covers it; the tap on it is the
+// user gesture browsers require to enter full screen. Never shown on the session screen, where the
+// Emergency stop button must always be reachable with one tap (a tap there re-enters full screen too).
+function FullscreenGate() {
+  const { route } = useApp();
+  const show = useFullscreenGate();
+  if (!show || route.name === 'Session') return null;
+  return (
+    <Pressable onPress={enterFullscreen} accessibilityRole="button" accessibilityLabel="Tap to continue in full screen" style={styles.gate}>
+      <Image source={logoMark} style={{ width: 86, height: 112 }} resizeMode="contain" />
+      <T style={styles.gateTitle}>Tap anywhere to continue</T>
+      <T style={styles.gateSub}>CARE 2.0 runs in full screen</T>
+    </Pressable>
   );
 }
 
@@ -100,7 +146,7 @@ export function Waves() {
   );
 }
 
-export function TopBar({ title, subtitle, showNav = true, lockNav = false }) {
+export function TopBar({ title, subtitle, showNav = true, lockNav = false, onClose }) {
   const { user, connected, telemetry, logout, reset } = useApp();
   const [menu, setMenu] = useState(false);
   const home = () => {
@@ -141,6 +187,11 @@ export function TopBar({ title, subtitle, showNav = true, lockNav = false }) {
         ) : null}
         <Icon name={connected || !user ? 'wifi' : 'wifiOff'} size={25} color="#fff" strokeWidth={2.2} />
         <Battery level={telemetry.battery} />
+        {onClose ? (
+          <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Close CARE 2.0" hitSlop={10} style={styles.closeBtn}>
+            <Icon name="close" size={26} color="#fff" strokeWidth={2.4} />
+          </Pressable>
+        ) : null}
       </View>
       {menu ? (
         <View style={[styles.menu, shadow.modal]}>
@@ -165,20 +216,25 @@ const MenuItem = ({ icon, label, onPress, disabled }) => (
 );
 
 // Standard screen: waves background + header + content area below it.
-export function Screen({ title, subtitle, showNav, lockNav, children, contentStyle }) {
+export function Screen({ title, subtitle, showNav, lockNav, onClose, children, contentStyle }) {
   return (
     <View style={styles.screen}>
       <Waves />
-      <TopBar title={title} subtitle={subtitle} showNav={showNav} lockNav={lockNav} />
+      <TopBar title={title} subtitle={subtitle} showNav={showNav} lockNav={lockNav} onClose={onClose} />
       <View style={[styles.content, contentStyle]}>{children}</View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  closeBtn: { marginLeft: 6, paddingLeft: 18, borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.25)', cursor: 'pointer' },
+  gate: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000, backgroundColor: colors.primaryDark, alignItems: 'center', justifyContent: 'center', gap: 18, cursor: 'pointer' },
+  gateTitle: { color: '#fff', fontSize: 30, fontWeight: '600' },
+  gateSub: { color: '#A7C99D', fontSize: 18 },
   stageOuter: { flex: 1, overflowX: 'hidden', overflowY: 'auto', backgroundColor: '#1b2e1d' },
   stageFrame: { width: '100%', flexShrink: 0, alignItems: 'center', justifyContent: 'center' },
   canvas: { position: 'absolute', left: 0, top: 0, width: SCREEN.width, height: SCREEN.height, backgroundColor: colors.white, overflow: 'hidden' },
+  canvasContent: { width: SCREEN.width, height: SCREEN.height, transitionProperty: 'transform', transitionDuration: '180ms' },
   screen: { width: SCREEN.width, height: SCREEN.height },
   bar: { height: SCREEN.headerHeight, backgroundColor: colors.primaryDark, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 36, zIndex: 40 },
   barSide: { width: 300, flexDirection: 'row', alignItems: 'center' },

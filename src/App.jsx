@@ -36,8 +36,9 @@ const SCREENS = {
 function Router() {
   const { route, user, connected, everConnected } = useApp();
   const Comp = SCREENS[route.name] || Login;
-  // The session screen handles a lost link itself (banner) so its E-stop is never covered.
-  const gate = user && route.name !== 'Login' && route.name !== 'Session' && !connected;
+  // Only Device Control polls the device and can lose the link here; the session screen shows a
+  // banner instead so its E-stop is never covered.
+  const gate = user && route.name === 'DeviceControl' && !connected;
   return (
     <>
       <Comp {...route.params} />
